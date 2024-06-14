@@ -1,0 +1,19 @@
+{
+    "name": "Lisp Development",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "terminal.integrated.shell.linux": "/bin/bash"
+            },
+            "extensions": [
+                "blamer.nvim"
+                // 他に必要な拡張機能があればここに追加します
+            ]
+        }
+    },
+    "postCreateCommand": "sudo apt-get update && sudo apt-get install -y sbcl clisp rlwrap",
+    "remoteUser": "vscode"
+}
