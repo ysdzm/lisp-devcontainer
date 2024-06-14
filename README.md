@@ -1,7 +1,7 @@
 # lisp-devcontainer
 
 ```bash
-rlwrap sbcl
+$ rlwrap sbcl
 ```
 
 ```lisp
