@@ -1,48 +1,55 @@
-(let ((env nil))  ; 初期環境は空
-  (labels
-      ((eval_ (e)
-         (cond
-           ;; リテラル値はそのまま返す
-           ((or (numberp e) (stringp e) (characterp e)) e)
+;; --- 補助関数の定義 ---
+(defun assoc_ (x a)
+  (cond ((eq (caar a) x) (cadar a))
+        (t (assoc_ x (cdr a)))))
 
-           ;; シンボルは環境から探索して再帰評価
-           ((symbolp e)
-            (let ((val (cdr (assoc e env))))
-              (eval_ val)))
+(defun pair_ (x y)
+  (cond ((and (null x) (null y)) '())
+        (t (cons (cons (car x) (car y))
+                 (pair_ (cdr x) (cdr y))))))
 
-           ;; quote式
-           ((and (consp e) (eq (car e) 'quote))
-            (cadr e))
+(defun evlis_ (m a)
+  (cond ((null m) '())
+        (t (cons (eval_ (car m) a)
+                 (evlis_ (cdr m) a)))))
 
-           ;; print式
-           ((and (consp e) (eq (car e) 'print))
-            (apply #'print (mapcar #'eval_ (cdr e))))
+(defun evcon_ (c a)
+  (cond ((eval_ (caar c) a) (eval_ (cadar c) a))
+        (t (evcon_ (cdr c) a))))
 
-           ;; 加算
-           ((and (consp e) (eq (car e) '+))
-            (apply #'+ (mapcar #'eval_ (cdr e))))
+;; --- 評価器の定義をS式で記述 ---
+(defparameter eval-def
+  '(label eval_
+     (lambda (e a)
+       (cond
+         ((atom e) (assoc_ e a))
+         ((atom (car e))
+          (cond
+            ((eq (car e) 'quote) (cadr e))
+            ((eq (car e) 'atom)  (atom (eval_ (cadr e) a)))
+            ((eq (car e) 'eq)    (eq (eval_ (cadr e) a)
+                                     (eval_ (caddr e) a)))
+            ((eq (car e) 'car)   (car (eval_ (cadr e) a)))
+            ((eq (car e) 'cdr)   (cdr (eval_ (cadr e) a)))
+            ((eq (car e) 'cons)  (cons (eval_ (cadr e) a)
+                                       (eval_ (caddr e) a)))
+            ((eq (car e) 'cond)  (evcon_ (cdr e) a))
+            ((eq (car e) 'eval_) (eval_ (eval_ (cadr e) a) a))
+            (t (eval_ (cons (assoc_ (car e) a)
+                            (cdr e)) a))))
+         ((eq (caar e) 'lambda)
+          (eval_ (caddr e)
+                 (pair_ (cadr (car e))
+                        (evlis_ (cdr e) a))))
+         (t (quote error))))))
 
-           ;; 乗算
-           ((and (consp e) (eq (car e) '*))
-            (apply #'* (mapcar #'eval_ (cdr e))))
+;; --- 初期環境の構築 ---
+(defparameter base-env
+  (list
+   (cons 'assoc_ #'assoc_)
+   (cons 'pair_  #'pair_)
+   (cons 'evlis_ #'evlis_)
+   (cons 'evcon_ #'evcon_)))
 
-           ;; cons構築
-           ((and (consp e) (eq (car e) 'cons))
-            (apply #'cons (mapcar #'eval_ (cdr e))))
-
-           ;; eval_ の入れ子呼び出し
-           ((and (consp e) (eq (car e) 'eval_))
-            (apply #'eval_ (mapcar #'eval_ (cdr e))))
-
-           (t (error "Unknown expression: ~S" e)))))
-
-    ;; 環境に hello と eval_ を登録
-    (setf env
-          (list
-           (cons 'hello '(print (+ 1 (* 3 3))))  ; hello → (print 10)
-           (cons 'eval_ #'eval_)))               ; eval_ の参照登録
-
-    ;; 評価実験
-    (eval_ 'hello)                                        ; → 10
-    (eval_ '(eval_ 'hello))                               ; → 10
-    (eval_ '(eval_ '(eval_ '(eval_ 'hello))))))           ; → 10
+;; --- 評価器を評価して、環境にeval_を導入 ---
+(defparameter env (eval_ eval-def base-env))
