@@ -8,16 +8,21 @@ $ rlwrap sbcl
 (load "maze.lisp")
 ```
 
-## Maze console game
+## Dungeon console game
 
 ```bash
 sbcl --script maze.lisp
 ```
 
-- `W` / `A` / `S` / `D`: move without Enter
+- `h` / `j` / `k` / `l`: move without Enter
+- `y` / `u` / `b` / `n`: move diagonally
 - `Q`: quit
 - `@`: player
-- `G`: goal
-- `#`: wall
+- `|` / `-`: wall
+- `+`: door
+- `#`: corridor
+- `.`: room floor
+- `%`: stairs to the next floor
+- `,`: Amulet of Yendor
 
-The maze uses ANSI colors in compatible terminals.
+The dungeon uses Rogue-style ASCII symbols.
